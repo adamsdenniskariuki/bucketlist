@@ -1,0 +1,7 @@
+.cache/
+__pycache__/
+.idea/
+benv/
+*.pyc
+.DS_Store
+.coverage
