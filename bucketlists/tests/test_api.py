@@ -20,7 +20,7 @@ class TestAPI(unittest.TestCase):
 
     # test user can register
     def test_register_user(self):
-        register_response = self.app.post('/auth/register',
+        register_response = self.app.post('/v1/auth/register',
                                           data={'name': 'Adams Kariuki',
                                                 'email': 'adams@andela.com',
                                                 'password': 'adams123'})
@@ -29,12 +29,12 @@ class TestAPI(unittest.TestCase):
 
     # test registered user can log in
     def test_login_user(self):
-        self.app.post('/auth/register',
+        self.app.post('/v1/auth/register',
                       data={'name': 'Adams Kariuki',
                             'email': 'adams@andela.com',
                             'password': 'adams123'})
 
-        login_response = self.app.post('/auth/login',
+        login_response = self.app.post('/v1/auth/login',
                                        data={'email': 'adams@andela.com',
                                              'password': 'adams123'})
         self.assertEquals(json.loads(login_response.data)['message'],
@@ -43,12 +43,12 @@ class TestAPI(unittest.TestCase):
 
     # test create bucket list
     def test_create_bucket_list(self):
-        register_response = self.app.post('/auth/register',
+        register_response = self.app.post('/v1/auth/register',
                                           data={'name': 'Adams Kariuki',
                                                 'email': 'adams@andela.com',
                                                 'password': 'adams123'})
 
-        create_response = self.app.post('/bucketlists/',
+        create_response = self.app.post('/v1/bucketlists/',
                                         data={'name': 'Learn Python'},
                                         headers=dict(Authorization='Bearer ' +
                                                                    json.loads(register_response.data)['user_token']))
@@ -57,12 +57,12 @@ class TestAPI(unittest.TestCase):
 
     # test list bucket list
     def test_list_bucket_list(self):
-        register_response = self.app.post('/auth/register',
+        register_response = self.app.post('/v1/auth/register',
                       data={'name': 'Adams Kariuki',
                             'email': 'adams@andela.com',
                             'password': 'adams123'})
 
-        list_response = self.app.get('/bucketlists/',
+        list_response = self.app.get('/v1/bucketlists/',
                                      headers=dict(Authorization='Bearer ' +
                                                                 json.loads(register_response.data)['user_token']))
         self.assertEquals(json.loads(list_response.data)['message'],
@@ -70,12 +70,12 @@ class TestAPI(unittest.TestCase):
 
     # test get single bucket list
     def test_get_single_bucket_list(self):
-        register_response = self.app.post('/auth/register',
+        register_response = self.app.post('/v1/auth/register',
                                           data={'name': 'Adams Kariuki',
                                                 'email': 'adams@andela.com',
                                                 'password': 'adams123'})
 
-        list_response = self.app.get('/bucketlists/1/',
+        list_response = self.app.get('/v1/bucketlists/1/',
                                      headers=dict(Authorization='Bearer ' +
                                                                 json.loads(register_response.data)['user_token']))
         self.assertEquals(json.loads(list_response.data)['message'],
@@ -83,12 +83,12 @@ class TestAPI(unittest.TestCase):
 
     # test update bucket list
     def test_update_bucket_list(self):
-        register_response = self.app.post('/auth/register',
+        register_response = self.app.post('/v1/auth/register',
                                           data={'name': 'Adams Kariuki',
                                                 'email': 'adams@andela.com',
                                                 'password': 'adams123'})
 
-        update_response = self.app.put('/bucketlists/1/',
+        update_response = self.app.put('/v1/bucketlists/1/',
                                        data={'name': 'Learn Django'},
                                        headers=dict(Authorization='Bearer ' +
                                                                   json.loads(register_response.data)['user_token']))
@@ -97,12 +97,12 @@ class TestAPI(unittest.TestCase):
 
     # test delete bucket list
     def test_delete_bucket_list(self):
-        register_response = self.app.post('/auth/register',
+        register_response = self.app.post('/v1/auth/register',
                                           data={'name': 'Adams Kariuki',
                                                 'email': 'adams@andela.com',
                                                 'password': 'adams123'})
 
-        delete_response = self.app.delete('/bucketlists/1/',
+        delete_response = self.app.delete('/v1/bucketlists/1/',
                                           headers=dict(Authorization='Bearer ' +
                                                                      json.loads(register_response.data)['user_token']))
         self.assertEquals(json.loads(delete_response.data)['message'],
@@ -110,12 +110,12 @@ class TestAPI(unittest.TestCase):
 
     # test create bucket list item
     def test_create_bucket_list_item(self):
-        register_response = self.app.post('/auth/register',
+        register_response = self.app.post('/v1/auth/register',
                                           data={'name': 'Adams Kariuki',
                                                 'email': 'adams@andela.com',
                                                 'password': 'adams123'})
 
-        create_item_response = self.app.post('/bucketlists/1/items/',
+        create_item_response = self.app.post('/v1/bucketlists/1/items/',
                                              data={'name': 'Learn Data Types'},
                                              headers=dict(Authorization='Bearer ' +
                                                                         json.loads(
@@ -125,12 +125,12 @@ class TestAPI(unittest.TestCase):
 
     # test update bucket list item
     def test_update_bucket_list_item(self):
-        register_response = self.app.post('/auth/register',
+        register_response = self.app.post('/v1/auth/register',
                                           data={'name': 'Adams Kariuki',
                                                 'email': 'adams@andela.com',
                                                 'password': 'adams123'})
 
-        update_item_response = self.app.put('/bucketlists/1/items/1',
+        update_item_response = self.app.put('/v1/bucketlists/1/items/1',
                                             data={'name': 'Learn Data Types',
                                                   'date_modified': datetime.now(),
                                                   'done': True},
@@ -142,12 +142,12 @@ class TestAPI(unittest.TestCase):
 
     # test delete bucket list item
     def test_delete_bucket_list_item(self):
-        register_response = self.app.post('/auth/register',
+        register_response = self.app.post('/v1/auth/register',
                                           data={'name': 'Adams Kariuki',
                                                 'email': 'adams@andela.com',
                                                 'password': 'adams123'})
 
-        delete_item_response = self.app.delete('/bucketlists/1/items/1',
+        delete_item_response = self.app.delete('/v1/bucketlists/1/items/1',
                                                headers=dict(Authorization='Bearer ' +
                                                                           json.loads(
                                                                               register_response.data)['user_token']))

@@ -29,16 +29,17 @@ def verify_token(func):
 
 
 @app.route('/', methods=['GET'])
+@app.route('/v1/', methods=['GET'])
 def index():
     return render_template('register.html', title='Register')
 
 
-@app.route('/auth/', methods=['GET'])
+@app.route('/v1/auth/', methods=['GET'])
 def error():
     return jsonify({'message': 'Access Denied'})
 
 
-@app.route('/auth/login', methods=['GET', 'POST'])
+@app.route('/v1/auth/login', methods=['GET', 'POST'])
 def login():
     result = {}
     if request.method == 'POST':
@@ -57,7 +58,7 @@ def login():
     return jsonify(result)
 
 
-@app.route('/auth/register', methods=['GET', 'POST'])
+@app.route('/v1/auth/register', methods=['GET', 'POST'])
 def register():
     result = {}
     if request.method == 'POST':
@@ -78,7 +79,7 @@ def register():
     return jsonify(result)
 
 
-@app.route('/bucketlists/', methods=['GET', 'POST'])
+@app.route('/v1/bucketlists/', methods=['GET', 'POST'])
 @verify_token
 def create_list_bucketlist():
     result = {}
@@ -108,7 +109,7 @@ def create_list_bucketlist():
         return jsonify(result)
 
 
-@app.route('/bucketlists/<int:id>/', methods=['GET', 'PUT', 'DELETE'])
+@app.route('/v1/bucketlists/<int:id>/', methods=['GET', 'PUT', 'DELETE'])
 @verify_token
 def get_update_delete_bucket(id):
     if request.method == 'GET':
@@ -124,7 +125,7 @@ def get_update_delete_bucket(id):
         return jsonify({'message': 'delete_single_success'})
 
 
-@app.route('/bucketlists/<int:id>/items/', methods=['POST'])
+@app.route('/v1/bucketlists/<int:id>/items/', methods=['POST'])
 @verify_token
 def new_item(id):
     if request.method == 'POST':
@@ -132,7 +133,7 @@ def new_item(id):
         return jsonify({'message': 'create_item_success'})
 
 
-@app.route('/bucketlists/<int:id>/items/<int:item_id>', methods=['PUT', 'DELETE'])
+@app.route('/v1/bucketlists/<int:id>/items/<int:item_id>', methods=['PUT', 'DELETE'])
 @verify_token
 def update_delete_item(id, item_id):
     if request.method == 'PUT':
