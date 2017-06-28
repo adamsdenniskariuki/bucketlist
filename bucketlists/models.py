@@ -9,6 +9,7 @@ class User(db.Model):
     name = db.Column(db.String(250), nullable=False)
     email = db.Column(db.String(250), unique=True, nullable=False)
     password = db.Column(db.String(250), nullable=False)
+    date_created = db.Column(db.DateTime, default=datetime.utcnow)
     bucketlists = db.relationship('Bucketlist', backref="user", lazy='dynamic')
 
     # Initialize variables
@@ -22,8 +23,8 @@ class User(db.Model):
     def generate_token(user_id):
         try:
             payload = {
-                'exp': datetime.now() + timedelta(days=0, seconds=10),
-                'iat': datetime.now(),
+                'exp': datetime.utcnow() + timedelta(days=0, seconds=1800),
+                'iat': datetime.utcnow(),
                 'sub': user_id
             }
             return jwt.encode(payload, SECRET_KEY, algorithm='HS256')
