@@ -47,6 +47,52 @@ class TestAPI(unittest.TestCase):
 
         self.assertEquals(login_response.status_code, 200)
 
+    # test user can search bucket lists by name
+    def test_user_search_bucket_lists_by_name(self):
+        register_response = self.register_user()
+
+        self.app.post('/v1/bucketlists/',
+                      data={'name': 'Learn Python'},
+                      headers=dict(Authorization='Bearer ' +
+                                                 json.loads(register_response.data)['user_token']))
+
+        search_by_name_response = self.app.get('/v1/bucketlists',
+                                               data={'q': 'Learn Python'},
+                                               headers=dict(Authorization='Bearer ' +
+                                                                          json.loads(register_response.data)[
+                                                                              'user_token']))
+
+        self.assertEquals(json.loads(search_by_name_response.data)['message'],
+                          'list_success')
+
+        self.assertEquals(json.loads(search_by_name_response.data)['bucketlists'][0]['name'],
+                          'Learn Python')
+
+    # test user can limit results
+    def test_user_can_limit_results(self):
+        register_response = self.register_user()
+
+        self.app.post('/v1/bucketlists/',
+                      data={'name': 'Learn Python'},
+                      headers=dict(Authorization='Bearer ' +
+                                                 json.loads(register_response.data)['user_token']))
+
+        self.app.post('/v1/bucketlists/',
+                      data={'name': 'Learn Android'},
+                      headers=dict(Authorization='Bearer ' +
+                                                 json.loads(register_response.data)['user_token']))
+
+        limit_response = self.app.get('/v1/bucketlists',
+                                      data={'limit': "1"},
+                                      headers=dict(Authorization='Bearer ' +
+                                                                 json.loads(register_response.data)[
+                                                                     'user_token']))
+
+        self.assertEquals(json.loads(limit_response.data)['message'],
+                          'list_success')
+
+        self.assertEquals(len(json.loads(limit_response.data)['bucketlists']), 1)
+
     # test create bucket list
     def test_create_bucket_list(self):
         register_response = self.register_user()
@@ -80,7 +126,7 @@ class TestAPI(unittest.TestCase):
         self.assertEquals(json.loads(list_response.data)['message'],
                           'list_success')
 
-        self.assertEquals(json.loads(list_response.data)['bucketlists']['name'],
+        self.assertEquals(json.loads(list_response.data)['bucketlists'][0]['name'],
                           'Learn Python')
 
         self.assertEquals(list_response.status_code, 200)
@@ -95,8 +141,8 @@ class TestAPI(unittest.TestCase):
                                                  json.loads(register_response.data)['user_token']))
 
         get_single_response = self.app.get('/v1/bucketlists/1/',
-                                     headers=dict(Authorization='Bearer ' +
-                                                                json.loads(register_response.data)['user_token']))
+                                           headers=dict(Authorization='Bearer ' +
+                                                                      json.loads(register_response.data)['user_token']))
 
         self.assertEquals(json.loads(get_single_response.data)['message'],
                           'get_single_success')

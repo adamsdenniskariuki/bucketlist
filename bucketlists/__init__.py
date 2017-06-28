@@ -116,9 +116,9 @@ def create_list_bucketlist():
 
         if user_id:
             try:
-                if request.args.get('limit') and int(request.values.get('limit')) < 100 and \
-                        isinstance(int(request.args.get('limit')), int):
-                    limit = int(request.args.get('limit'))
+                if request.values.get('limit') and int(request.values.get('limit')) <= 100 and \
+                        isinstance(int(request.values.get('limit')), int):
+                    limit = int(request.values.get('limit'))
                 else:
                     limit = 20
 
@@ -297,6 +297,10 @@ def update_delete_item(id, item_id):
             item = BucketListItems.query.filter_by(bucketlist_id=id, id=item_id).first()
             if item:
                 item.name = request.values.get('name')
+                if request.values.get('done') and request.values.get('done').lower() == "true":
+                    item.done = True
+                else:
+                    item.done = False
                 db.session.commit()
                 result.update({
                     'message': 'update_item_success',
