@@ -45,31 +45,29 @@ class User(db.Model):
 # Create table for bucket lists
 class Bucketlist(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(250), nullable=False)
-    date_created = db.Column(db.DateTime, default=datetime.now)
-    date_modified = db.Column(db.String(120))
+    name = db.Column(db.String(250), unique=True, nullable=False)
+    date_created = db.Column(db.DateTime, default=datetime.utcnow)
+    date_modified = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey("user.id"))
     bucketlistitems = db.relationship('BucketListItems', backref="bucketlist", lazy='dynamic')
 
     # Initialize variables
-    def __init__(self, name, created_by, date_modified=datetime.now()):
+    def __init__(self, name, created_by):
         self.name = name
-        self.date_modified = date_modified
         self.created_by = created_by
 
 
 # Create Bucket list Items
 class BucketListItems(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(250), nullable=False)
-    date_created = db.Column(db.DateTime, default=datetime.now)
-    date_modified = db.Column(db.String(120))
-    done = db.Column(db.Boolean)
+    name = db.Column(db.String(250), unique=True, nullable=False)
+    date_created = db.Column(db.DateTime, default=datetime.utcnow)
+    date_modified = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    done = db.Column(db.Boolean, default=False)
     bucketlist_id = db.Column(db.Integer, db.ForeignKey("bucketlist.id"))
 
     # Initialize variables
-    def __init__(self, name, item, date_modified, done):
+    def __init__(self, name, bucketlist_id, done=False):
         self.name = name
-        self.item = item
-        self.date_modified = date_modified
         self.done = done
+        self.bucketlist_id = bucketlist_id
