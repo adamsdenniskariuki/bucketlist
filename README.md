@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/adamsdenniskariuki/bucketlist.svg?branch=dev)](https://travis-ci.org/adamsdenniskariuki/bucketlist) [![Coverage Status](https://coveralls.io/repos/github/adamsdenniskariuki/bucketlist/badge.svg?branch=dev)](https://coveralls.io/github/adamsdenniskariuki/Adams-Kariuki-Dojo-Project?branch=v0)
+[![Build Status](https://travis-ci.org/adamsdenniskariuki/bucketlist.svg?branch=dev)](https://travis-ci.org/adamsdenniskariuki/bucketlist) [![Coverage Status](https://coveralls.io/repos/github/adamsdenniskariuki/bucketlist/badge.svg?branch=dev)](https://coveralls.io/github/adamsdenniskariuki/Adams-Kariuki-Dojo-Project?branch=v0) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/3ba1338edb524688b03be35420301c6d)](https://www.codacy.com/app/adamsdenniskariuki/bucketlist?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=adamsdenniskariuki/bucketlist&amp;utm_campaign=Badge_Grade)
 
 # Bucket list API
 
