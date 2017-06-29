@@ -1,6 +1,5 @@
 import unittest
 import json
-from datetime import datetime
 from config import db, app
 
 

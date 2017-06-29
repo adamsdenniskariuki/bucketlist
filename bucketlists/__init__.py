@@ -158,9 +158,9 @@ def create_list_bucketlist():
         return jsonify(result)
 
 
-@app.route('/v1/bucketlists/<int:id>/', methods=['GET', 'PUT', 'DELETE'])
+@app.route('/v1/bucketlists/<int:bid>/', methods=['GET', 'PUT', 'DELETE'])
 @verify_token
-def get_update_delete_bucket(id):
+def get_update_delete_bucket(bid):
     result = {}
     user_id = get_user_from_token()
 
@@ -169,7 +169,7 @@ def get_update_delete_bucket(id):
         # get single bucket list
 
         try:
-            bucket_list = Bucketlist.query.filter_by(created_by=user_id, id=id).first()
+            bucket_list = Bucketlist.query.filter_by(created_by=user_id, id=bid).first()
             output = {}
             if bucket_list:
                 items = BucketListItems.query.filter_by(bucketlist_id=bucket_list.id).all()
@@ -206,7 +206,7 @@ def get_update_delete_bucket(id):
         # update single bucket list
 
         try:
-            bucket_list = Bucketlist.query.filter_by(created_by=user_id, id=id).first()
+            bucket_list = Bucketlist.query.filter_by(created_by=user_id, id=bid).first()
             output = {}
             if bucket_list:
                 items = BucketListItems.query.filter_by(bucketlist_id=bucket_list.id).all()
@@ -245,9 +245,9 @@ def get_update_delete_bucket(id):
         # delete single bucket list
 
         try:
-            bucket_list = Bucketlist.query.filter_by(created_by=user_id, id=id).first()
+            bucket_list = Bucketlist.query.filter_by(created_by=user_id, id=bid).first()
             if bucket_list:
-                delete_bucket = Bucketlist.query.filter_by(created_by=user_id, id=id).delete()
+                delete_bucket = Bucketlist.query.filter_by(created_by=user_id, id=bid).delete()
                 db.session.commit()
                 if delete_bucket:
                     result.update({'message': 'delete_single_success'})
@@ -260,9 +260,9 @@ def get_update_delete_bucket(id):
         return jsonify(result)
 
 
-@app.route('/v1/bucketlists/<int:id>/items/', methods=['POST'])
+@app.route('/v1/bucketlists/<int:bid>/items/', methods=['POST'])
 @verify_token
-def new_item(id):
+def new_item(bid):
     result = {}
     user_id = get_user_from_token()
 
@@ -271,7 +271,7 @@ def new_item(id):
         # create new item in bucket list
 
         try:
-            bucket_list = Bucketlist.query.filter_by(created_by=user_id, id=id).first()
+            bucket_list = Bucketlist.query.filter_by(created_by=user_id, id=bid).first()
             if bucket_list:
                 item = BucketListItems(request.values.get('name'), bucket_list.id)
                 db.session.add(item)
@@ -296,9 +296,9 @@ def new_item(id):
         return jsonify(result)
 
 
-@app.route('/v1/bucketlists/<int:id>/items/<int:item_id>', methods=['PUT', 'DELETE'])
+@app.route('/v1/bucketlists/<int:bid>/items/<int:item_id>', methods=['PUT', 'DELETE'])
 @verify_token
-def update_delete_item(id, item_id):
+def update_delete_item(bid, item_id):
     result = {}
     user_id = get_user_from_token()
 
@@ -307,9 +307,9 @@ def update_delete_item(id, item_id):
         # update a bucket list item
 
         try:
-            bucket_list = Bucketlist.query.filter_by(id=id).first()
+            bucket_list = Bucketlist.query.filter_by(id=bid).first()
             if bucket_list and bucket_list.created_by == user_id:
-                item = BucketListItems.query.filter_by(bucketlist_id=id, id=item_id).first()
+                item = BucketListItems.query.filter_by(bucketlist_id=bid, id=item_id).first()
                 if item:
                     item.name = request.values.get('name')
                     if request.values.get('done') and request.values.get('done').lower() == "true":
@@ -343,9 +343,9 @@ def update_delete_item(id, item_id):
         # delete item in bucket list
 
         try:
-            bucket_list = Bucketlist.query.filter_by(id=id).first()
+            bucket_list = Bucketlist.query.filter_by(id=bid).first()
             if bucket_list and bucket_list.created_by == user_id:
-                delete_item = BucketListItems.query.filter_by(bucketlist_id=id, id=item_id).delete()
+                delete_item = BucketListItems.query.filter_by(bucketlist_id=bid, id=item_id).delete()
                 db.session.commit()
                 if delete_item:
                     result.update({'message': 'delete_item_success'})
