@@ -1,5 +1,6 @@
-[![Build Status](https://travis-ci.org/adamsdenniskariuki/bucketlist.svg?branch=master)]
-(https://travis-ci.org/adamsdenniskariuki/bucketlist)
+[![Build Status](https://travis-ci.org/adamsdenniskariuki/bucketlist.svg?branch=dev)]
+(https://travis-ci.org/adamsdenniskariuki/bucketlist) [![Coverage Status](https://coveralls.io/repos/github/adamsdenniskariuki/bucketlist/badge.svg?branch=dev)]
+(https://coveralls.io/github/adamsdenniskariuki/Adams-Kariuki-Dojo-Project?branch=v0)
 
 # Bucket list API
 
