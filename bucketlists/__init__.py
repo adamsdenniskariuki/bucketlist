@@ -7,8 +7,10 @@ from config import app, db
 db.create_all()
 
 
-# get user id from token
 def get_user_from_token():
+
+    # get user id from token
+
     if request.headers.get('Authorization'):
         token = bytes(request.headers.get('Authorization').split(" ")[1], 'utf-8')
         decoded_id = User.decode_token(token)
@@ -19,8 +21,10 @@ def get_user_from_token():
     return None
 
 
-# Check if the user is authenticated
 def verify_token(func):
+
+    # Authenticates user token
+
     @wraps(func)
     def token_required(*args, **kwargs):
         if get_user_from_token():
@@ -30,21 +34,21 @@ def verify_token(func):
     return token_required
 
 
-@app.route('/', methods=['GET'])
-@app.route('/v1/', methods=['GET'])
+@app.route('/')
+@app.route('/v1/')
+@app.route('/v1/auth/')
 def index():
-    return render_template('register.html', title='Register')
-
-
-@app.route('/v1/auth/', methods=['GET'])
-def error():
-    return jsonify({'message': 'Access Denied'})
+    return jsonify({'message': 'Access Denied.'})
 
 
 @app.route('/v1/auth/login', methods=['GET', 'POST'])
 def login():
     result = {}
+
     if request.method == 'POST':
+
+        # Verifies existing user's email and password
+
         try:
             user = User.query.filter_by(email=request.values.get('email')).first()
             if user and check_password_hash(user.password, request.values.get('password')):
@@ -57,13 +61,20 @@ def login():
             db.session.rollback()
             db.session.flush()
             result.update({'message': str(exc)})
-    return jsonify(result)
+        return jsonify(result)
+
+    else:
+        return jsonify({'message': 'Access Denied. Methods allowed are GET and POST.'})
 
 
 @app.route('/v1/auth/register', methods=['GET', 'POST'])
 def register():
     result = {}
+
     if request.method == 'POST':
+
+        # Saves new user to database
+
         try:
             user = User(request.values.get('name'),
                         request.values.get('email'),
@@ -78,7 +89,10 @@ def register():
             db.session.rollback()
             db.session.flush()
             result.update({'message': str(exc)})
-    return jsonify(result)
+        return jsonify(result)
+
+    else:
+        return jsonify({'message': 'Access Denied. Methods allowed are GET and POST.'})
 
 
 @app.route('/v1/bucketlists/', methods=['GET', 'POST'])
@@ -86,6 +100,7 @@ def register():
 def create_list_bucketlist():
     result = {}
     user_id = get_user_from_token()
+
     if request.method == 'POST':
 
         # Create new bucket list
@@ -110,6 +125,7 @@ def create_list_bucketlist():
                 db.session.flush()
                 result.update({'message': str(exc)})
         return jsonify(result)
+
     elif request.method == 'GET':
 
         # list all bucket lists for user
@@ -156,6 +172,9 @@ def create_list_bucketlist():
             except Exception as exc:
                 result.update({'message': str(exc)})
         return jsonify(result)
+
+    else:
+        return jsonify({'message': 'Access Denied. Methods allowed are GET and POST.'})
 
 
 @app.route('/v1/bucketlists/<int:bid>/', methods=['GET', 'PUT', 'DELETE'])
@@ -259,6 +278,9 @@ def get_update_delete_bucket(bid):
             result.update({'message': str(exc)})
         return jsonify(result)
 
+    else:
+        return jsonify({'message': 'Access Denied. Methods allowed are GET, PUT and DELETE.'})
+
 
 @app.route('/v1/bucketlists/<int:bid>/items/', methods=['POST'])
 @verify_token
@@ -294,6 +316,9 @@ def new_item(bid):
             db.session.flush()
             result.update({'message': str(exc)})
         return jsonify(result)
+
+    else:
+        return jsonify({'message': 'Access Denied. The only Method allowed is POST.'})
 
 
 @app.route('/v1/bucketlists/<int:bid>/items/<int:item_id>', methods=['PUT', 'DELETE'])
@@ -356,3 +381,6 @@ def update_delete_item(bid, item_id):
             db.session.flush()
             result.update({'message': str(exc)})
         return jsonify(result)
+
+    else:
+        return jsonify({'message': 'Access Denied. Methods allowed are PUT and DELETE.'})
