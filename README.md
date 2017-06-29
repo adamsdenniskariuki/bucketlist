@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/adamsdenniskariuki/bucketlist.svg?branch=master)]
+(https://travis-ci.org/adamsdenniskariuki/bucketlist)
+
 # Bucket list API
 
     This is an API that allows a user to create a bucket list and add items to it.
