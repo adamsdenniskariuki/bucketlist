@@ -276,6 +276,8 @@ def new_item(id):
                         'bucket_id': item.bucketlist_id
                     }
                 })
+            else:
+                result.update({'message': 'Bucket list does not exist'})
         except Exception as exc:
             db.session.rollback()
             db.session.flush()
@@ -294,25 +296,31 @@ def update_delete_item(id, item_id):
         # update a bucket list item
 
         try:
-            item = BucketListItems.query.filter_by(bucketlist_id=id, id=item_id).first()
-            if item:
-                item.name = request.values.get('name')
-                if request.values.get('done') and request.values.get('done').lower() == "true":
-                    item.done = True
+            bucket_list = Bucketlist.query.filter_by(id=id).first()
+            if bucket_list and bucket_list.created_by == user_id:
+                item = BucketListItems.query.filter_by(bucketlist_id=id, id=item_id).first()
+                if item:
+                    item.name = request.values.get('name')
+                    if request.values.get('done') and request.values.get('done').lower() == "true":
+                        item.done = True
+                    else:
+                        item.done = False
+                    db.session.commit()
+                    result.update({
+                        'message': 'update_item_success',
+                        'item': {
+                            'id': item.id,
+                            'name': item.name,
+                            'date_created': item.date_created,
+                            'date_modified': item.date_modified,
+                            'done': item.done,
+                            'bucket_id': item.bucketlist_id
+                        }
+                    })
                 else:
-                    item.done = False
-                db.session.commit()
-                result.update({
-                    'message': 'update_item_success',
-                    'item': {
-                        'id': item.id,
-                        'name': item.name,
-                        'date_created': item.date_created,
-                        'date_modified': item.date_modified,
-                        'done': item.done,
-                        'bucket_id': item.bucketlist_id
-                    }
-                })
+                    result.update({'message': 'Item does not exist'})
+            else:
+                result.update({'message': 'Bucket list does not exist or User does not own bucket list {}'.format(id)})
         except Exception as exc:
             db.session.rollback()
             db.session.flush()
@@ -324,10 +332,14 @@ def update_delete_item(id, item_id):
         # delete item in bucket list
 
         try:
-            delete_item = BucketListItems.query.filter_by(bucketlist_id=id, id=item_id).delete()
-            db.session.commit()
-            if delete_item:
-                result.update({'message': 'delete_item_success'})
+            bucket_list = Bucketlist.query.filter_by(id=id).first()
+            if bucket_list and bucket_list.created_by == user_id:
+                delete_item = BucketListItems.query.filter_by(bucketlist_id=id, id=item_id).delete()
+                db.session.commit()
+                if delete_item:
+                    result.update({'message': 'delete_item_success'})
+            else:
+                result.update({'message': 'Bucket list does not exist or User does not own bucket list {}'.format(id)})
         except Exception as exc:
             db.session.rollback()
             db.session.flush()
