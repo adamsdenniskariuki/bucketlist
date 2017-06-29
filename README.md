@@ -6,23 +6,23 @@
 
 # Prerequisites
 
-    ## Python 3: https://www.python.org/downloads/
+### Python 3: https://www.python.org/downloads/
 
-        - Provides the interpreter for the bucket list application.
+    - Provides the interpreter for the bucket list application.
 
-    ## Virtual env: https://virtualenv.pypa.io/en/stable/
+### Virtual env: https://virtualenv.pypa.io/en/stable/
 
-        - Creates a virtual environment to deploy the application.
+    - Creates a virtual environment to deploy the application.
 
-    ## Flask: http://flask.pocoo.org/
+### Flask: http://flask.pocoo.org/
 
-        - Framework the application uses to create the API
+    - Framework the application uses to create the API
 
-    # Optional tools to test the API
+### Optional tools to test the API
 
-        - Postman: https://www.getpostman.com/postman
+    - Postman: https://www.getpostman.com/postman
 
-        - Curl: http://pycurl.io/
+    - Curl: http://pycurl.io/
 
 # Deployment
 
@@ -30,23 +30,23 @@
 
     - Navigate to the installation folder in the shell
 
-    - In the shell create the environment using: virtualenv -p python3 virtual_env
+    - Create the environment in the shell using: virtualenv -p python3 virtual_env
 
     - Install all the dependencies in the shell using: pip install -r requirements.txt
 
-    - Edit config.py with the necessary changes
+    - Edit config.py with the necessary configurations
 
     - Run data base migrations using the following commands
 
-    - python3 ./manage.py db init
+        - python3 ./manage.py db init
 
-    - python3 ./manage.py db migrate
+        - python3 ./manage.py db migrate
 
-    - python3 ./manage.py db upgrade
+        - python3 ./manage.py db upgrade
 
     - Run the app using python3 ./run.py
 
-    - Use curl or Postman to test the API
+    - Use Curl or Postman to test the API
 
 # API Endpoints
 
@@ -72,7 +72,7 @@
 
 # Feedback
 
-    - Please leave a comment or just say hi!
+    - Please leave a comment!
 
 # Author
 
