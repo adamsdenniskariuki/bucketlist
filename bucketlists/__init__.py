@@ -148,8 +148,11 @@ def create_list_bucketlist():
                             'date_modified': bucket_list.date_modified,
                             'created_by': bucket_list.created_by
                         })
-                result.update({'message': 'list_success',
-                               'bucketlists': output})
+                    result.update({'message': 'list_success',
+                                   'bucketlists': output})
+                else:
+                    result.update(
+                        {'message': 'Bucket list does not exist'})
             except Exception as exc:
                 result.update({'message': str(exc)})
         return jsonify(result)
@@ -188,8 +191,10 @@ def get_update_delete_bucket(id):
                     'date_modified': bucket_list.date_modified,
                     'created_by': bucket_list.created_by
                 })
-            result.update({'message': 'get_single_success',
-                           'bucketlist': output})
+                result.update({'message': 'get_single_success',
+                               'bucketlist': output})
+            else:
+                result.update({'message': 'Bucket list does not exist or User does not own bucket list {}'.format(id)})
         except Exception as exc:
             db.session.rollback()
             db.session.flush()
@@ -225,8 +230,10 @@ def get_update_delete_bucket(id):
                     'date_modified': bucket_list.date_modified,
                     'created_by': bucket_list.created_by
                 })
-            result.update({'message': 'update_single_success',
-                           'bucketlist': output})
+                result.update({'message': 'update_single_success',
+                               'bucketlist': output})
+            else:
+                result.update({'message': 'Bucket list does not exist or User does not own bucket list {}'.format(id)})
         except Exception as exc:
             db.session.rollback()
             db.session.flush()
@@ -238,10 +245,14 @@ def get_update_delete_bucket(id):
         # delete single bucket list
 
         try:
-            delete_bucket = Bucketlist.query.filter_by(created_by=user_id, id=id).delete()
-            db.session.commit()
-            if delete_bucket:
-                result.update({'message': 'delete_single_success'})
+            bucket_list = Bucketlist.query.filter_by(created_by=user_id, id=id).first()
+            if bucket_list:
+                delete_bucket = Bucketlist.query.filter_by(created_by=user_id, id=id).delete()
+                db.session.commit()
+                if delete_bucket:
+                    result.update({'message': 'delete_single_success'})
+            else:
+                result.update({'message': 'Bucket list does not exist or User does not own bucket list {}'.format(id)})
         except Exception as exc:
             db.session.rollback()
             db.session.flush()
