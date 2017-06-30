@@ -1,5 +1,5 @@
 from functools import wraps
-from flask import render_template, request, jsonify
+from flask import request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from bucketlists.models import User, Bucketlist, BucketListItems
 from config import app, db

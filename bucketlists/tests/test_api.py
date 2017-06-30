@@ -4,6 +4,7 @@ from config import db, app
 
 
 class TestAPI(unittest.TestCase):
+
     """ test the api """
 
     # declare global variables
