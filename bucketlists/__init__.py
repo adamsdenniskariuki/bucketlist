@@ -1,8 +1,11 @@
 from functools import wraps
-from flask import request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
-from bucketlists.models import User, Bucketlist, BucketListItems
-from config import app, db
+from flask import request, jsonify
+from webargs import fields
+from webargs.flaskparser import use_args
+from flask_restplus import Resource
+from bucketlists.models import User, Bucketlist, BucketListItems, UserSchema, BucketSchema, ItemsSchema
+from config import app, db, api
 
 db.create_all()
 
@@ -41,17 +44,36 @@ def index():
     return jsonify({'message': 'Access Denied.'})
 
 
+@api.route('/v2/auth/')
+@api.doc(params={'Email': 'User email', 'Password': 'User password'})
+class HelloWorld(Resource):
+    def get(self):
+        return {'hello': 'world'}
+
+
+login_args = {
+    'email': fields.Str(),
+    'password': fields.Str()
+}
+
+
 @app.route('/v1/auth/login', methods=['GET', 'POST'])
-def login():
+@use_args(login_args)
+def login(args):
     result = {}
 
     if request.method == 'POST':
 
         # Verifies existing user's email and password
 
+        schema = UserSchema()
+        errors = schema.validate(args)
+        if errors:
+            return jsonify(errors)
+
         try:
-            user = User.query.filter_by(email=request.values.get('email')).first()
-            if user and check_password_hash(user.password, request.values.get('password')):
+            user = User.query.filter_by(email=args['email']).first()
+            if user and check_password_hash(user.password, args['password']):
                 user_token = user.generate_token(user.id)
                 result.update({'message': 'login_success',
                                'user_token': user_token.decode()})
@@ -67,18 +89,29 @@ def login():
         return jsonify({'message': 'Access Denied. Methods allowed are GET and POST.'})
 
 
+register_args = {
+    'name': fields.Str(),
+    'email': fields.Str(),
+    'password': fields.Str()
+}
+
+
 @app.route('/v1/auth/register', methods=['GET', 'POST'])
-def register():
+@use_args(register_args)
+def register(args):
     result = {}
 
     if request.method == 'POST':
 
         # Saves new user to database
 
+        schema = UserSchema()
+        errors = schema.validate(args)
+        if errors:
+            return jsonify(errors)
+
         try:
-            user = User(request.values.get('name'),
-                        request.values.get('email'),
-                        generate_password_hash(request.values.get('password')))
+            user = User(args['name'], args['email'], generate_password_hash(args['password']))
             db.session.add(user)
             db.session.commit()
             user_token = user.generate_token(user.id)
@@ -95,11 +128,24 @@ def register():
         return jsonify({'message': 'Access Denied. Methods allowed are GET and POST.'})
 
 
+create_list_args = {
+    'name': fields.Str(),
+    'q': fields.Str(),
+    'limit': fields.Int(missing=20)
+}
+
+
 @app.route('/v1/bucketlists/', methods=['GET', 'POST'])
 @verify_token
-def create_list_bucketlist():
+@use_args(create_list_args)
+def create_list_bucket_list(args):
     result = {}
     user_id = get_user_from_token()
+
+    schema = BucketSchema()
+    errors = schema.validate(args)
+    if errors:
+        return jsonify(errors)
 
     if request.method == 'POST':
 
@@ -107,7 +153,7 @@ def create_list_bucketlist():
 
         if user_id:
             try:
-                bucket_list = Bucketlist(request.values.get('name'), user_id)
+                bucket_list = Bucketlist(args['name'], user_id)
                 db.session.add(bucket_list)
                 db.session.commit()
                 result.update({
@@ -132,14 +178,13 @@ def create_list_bucketlist():
 
         if user_id:
             try:
-                if request.values.get('limit') and int(request.values.get('limit')) <= 100 and \
-                        isinstance(int(request.values.get('limit')), int):
-                    limit = int(request.values.get('limit'))
+                if args['limit'] and int(args['limit']) <= 100 and isinstance(int(args['limit']), int):
+                    limit = int(args['limit'])
                 else:
                     limit = 20
 
                 if request.args.get('q'):
-                    bucket_lists = Bucketlist.query.filter_by(created_by=user_id, name=request.args.get('q')).all()
+                    bucket_lists = Bucketlist.query.filter_by(created_by=user_id, name=args['q']).all()
                 else:
                     bucket_lists = Bucketlist.query.filter_by(created_by=user_id).limit(limit)
                 output = []
@@ -176,12 +221,25 @@ def create_list_bucketlist():
     else:
         return jsonify({'message': 'Access Denied. Methods allowed are GET and POST.'})
 
+get_update_delete_args = {
+    'name': fields.Str()
+}
+
 
 @app.route('/v1/bucketlists/<int:bid>/', methods=['GET', 'PUT', 'DELETE'])
 @verify_token
-def get_update_delete_bucket(bid):
+@use_args(get_update_delete_args)
+def get_update_delete_bucket(args, bid):
     result = {}
     user_id = get_user_from_token()
+
+    if not isinstance(bid, int):
+        return jsonify({'message': 'Bucket list id must be an integer'})
+
+    schema = BucketSchema()
+    errors = schema.validate(args)
+    if errors:
+        return jsonify(errors)
 
     if request.method == 'GET':
 
@@ -239,7 +297,7 @@ def get_update_delete_bucket(bid):
                             'date_modified': item.date_modified,
                             'done': item.done
                         })
-                bucket_list.name = request.values.get('name')
+                bucket_list.name = args['name']
                 db.session.commit()
                 output.update({
                     'id': bucket_list.id,
@@ -282,11 +340,25 @@ def get_update_delete_bucket(bid):
         return jsonify({'message': 'Access Denied. Methods allowed are GET, PUT and DELETE.'})
 
 
+new_item_args = {
+    'name': fields.Str()
+}
+
+
 @app.route('/v1/bucketlists/<int:bid>/items/', methods=['POST'])
 @verify_token
-def new_item(bid):
+@use_args(new_item_args)
+def new_item(args, bid):
     result = {}
     user_id = get_user_from_token()
+
+    if not isinstance(bid, int):
+        return jsonify({'message': 'Bucket list id must be an integer'})
+
+    schema = ItemsSchema()
+    errors = schema.validate(args)
+    if errors:
+        return jsonify(errors)
 
     if request.method == 'POST':
 
@@ -295,7 +367,7 @@ def new_item(bid):
         try:
             bucket_list = Bucketlist.query.filter_by(created_by=user_id, id=bid).first()
             if bucket_list:
-                item = BucketListItems(request.values.get('name'), bucket_list.id)
+                item = BucketListItems(args['name'], bucket_list.id)
                 db.session.add(item)
                 db.session.commit()
                 result.update({
@@ -321,11 +393,26 @@ def new_item(bid):
         return jsonify({'message': 'Access Denied. The only Method allowed is POST.'})
 
 
+update_delete_args = {
+    'name': fields.Str(),
+    'done': fields.Str()
+}
+
+
 @app.route('/v1/bucketlists/<int:bid>/items/<int:item_id>', methods=['PUT', 'DELETE'])
 @verify_token
-def update_delete_item(bid, item_id):
+@use_args(update_delete_args)
+def update_delete_item(args, bid, item_id):
     result = {}
     user_id = get_user_from_token()
+
+    if not all(isinstance(x, int) for x in [bid, item_id]):
+        return jsonify({'message': 'Bucket list id and Item id must be an integer'})
+
+    schema = ItemsSchema()
+    errors = schema.validate(args)
+    if errors:
+        return jsonify(errors)
 
     if request.method == 'PUT':
 
@@ -336,8 +423,8 @@ def update_delete_item(bid, item_id):
             if bucket_list and bucket_list.created_by == user_id:
                 item = BucketListItems.query.filter_by(bucketlist_id=bid, id=item_id).first()
                 if item:
-                    item.name = request.values.get('name')
-                    if request.values.get('done') and request.values.get('done').lower() == "true":
+                    item.name = args['name']
+                    if args['done'] and args['done'].lower() == "true":
                         item.done = True
                     else:
                         item.done = False

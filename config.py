@@ -2,6 +2,8 @@ import os
 import sys
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_marshmallow import Marshmallow
+from flask_restplus import Api
 
 # get the root directory and add it to the system path
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -39,3 +41,9 @@ SECRET_KEY = b'\xa1\xb5\x92\xc6i2\xc6\xc8\x19\xcf83\xd5\x14i;\xd6\x83!\xe1we\x02
 
 # create the database object for the application
 db = SQLAlchemy(app)
+
+# create dictionary schema for models
+schema = Marshmallow(app)
+
+# create flask-restful app
+api = Api(app)
