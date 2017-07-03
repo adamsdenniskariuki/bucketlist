@@ -2,8 +2,10 @@
 __pycache__/
 .idea/
 benv/
+v0/
 migrations/
 *.pyc
 .DS_Store
 .coverage
 *.txt
+v0.py

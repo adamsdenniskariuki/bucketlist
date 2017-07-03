@@ -93,7 +93,7 @@ class UserSchema(schema.ModelSchema):
     @validates('password')
     def validate_name(self, password):
         if password.strip() == "":
-            raise ValidationError("Name cannot be empty")
+            raise ValidationError("Password cannot be empty")
 
 
 # Schema for the Bucketlist class
@@ -105,9 +105,9 @@ class BucketSchema(schema.ModelSchema):
 
     @validates('name')
     def validate_name(self, name):
-        if name.replace(" ", "") == "":
+        if name.replace(" ", "") == "" or len(name) < 1:
             raise ValidationError("Bucket list name cannot be empty")
-        elif name.replace(" ", "").strip().isalpha() is False:
+        elif name.replace(" ", "").strip().isalnum() is False:
             raise ValidationError("Use alphabet letters (a-z) only for the bucket list name")
 
 
@@ -121,7 +121,7 @@ class ItemsSchema(schema.ModelSchema):
 
     @validates('name')
     def validate_name(self, name):
-        if name.replace(" ", "") == "":
+        if name.replace(" ", "") == "" or len(name) < 1:
             raise ValidationError("Item name cannot be empty")
-        elif name.replace(" ", "").strip().isalpha() is False:
+        elif name.replace(" ", "").strip().isalnum() is False:
             raise ValidationError("Use alphabet letters (a-z) only for the item name")

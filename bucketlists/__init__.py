@@ -1,9 +1,9 @@
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import request, jsonify
-from webargs import fields
-from webargs.flaskparser import use_args
 from flask_restplus import Resource
+from webargs import fields
+from webargs.flaskparser import parser
 from bucketlists.models import User, Bucketlist, BucketListItems, UserSchema, BucketSchema, ItemsSchema
 from config import app, db, api
 
@@ -12,7 +12,7 @@ db.create_all()
 
 def get_user_from_token():
 
-    # get user id from token
+    """ Get user id from token """
 
     if request.headers.get('Authorization'):
         token = bytes(request.headers.get('Authorization').split(" ")[1], 'utf-8')
@@ -26,46 +26,41 @@ def get_user_from_token():
 
 def verify_token(func):
 
-    # Authenticates user token
+    """ Authenticates user token """
 
     @wraps(func)
     def token_required(*args, **kwargs):
         if get_user_from_token():
             return func(*args, **kwargs)
-        return jsonify({'message': 'Access Denied. Log in Again.'})
+        return jsonify({'messages': 'Access Denied. Log in Again.'})
 
     return token_required
 
 
 @app.route('/')
 @app.route('/v1/')
-@app.route('/v1/auth/')
+@app.route('/v1/auth')
+@app.route('/api/v1/')
+@app.route('/api/v1/auth/')
 def index():
-    return jsonify({'message': 'Access Denied.'})
-
-
-@api.route('/v2/auth/')
-@api.doc(params={'Email': 'User email', 'Password': 'User password'})
-class HelloWorld(Resource):
-    def get(self):
-        return {'hello': 'world'}
+    return jsonify({'messages': 'Access Denied.'})
 
 
 login_args = {
-    'email': fields.Str(),
-    'password': fields.Str()
+    'email': fields.Str(required=True),
+    'password': fields.Str(required=True)
 }
 
 
-@app.route('/v1/auth/login', methods=['GET', 'POST'])
-@use_args(login_args)
-def login(args):
-    result = {}
+@api.route('/api/v1/auth/login')
+class Login(Resource):
+    @api.doc(params={'password': 'User password', 'email': 'User email'})
+    def post(self):
 
-    if request.method == 'POST':
+        """ Login Registered Users """
 
-        # Verifies existing user's email and password
-
+        result = {}
+        args = parser.parse(login_args, request)
         schema = UserSchema()
         errors = schema.validate(args)
         if errors:
@@ -75,36 +70,33 @@ def login(args):
             user = User.query.filter_by(email=args['email']).first()
             if user and check_password_hash(user.password, args['password']):
                 user_token = user.generate_token(user.id)
-                result.update({'message': 'login_success',
+                result.update({'messages': 'login_success',
                                'user_token': user_token.decode()})
             else:
-                result.update({'message': 'Invalid credentials. Log in again.'})
+                result.update({'messages': 'Invalid credentials. Log in again.'})
         except Exception as exc:
             db.session.rollback()
             db.session.flush()
-            result.update({'message': str(exc)})
+            result.update({'messages': str(exc)})
         return jsonify(result)
-
-    else:
-        return jsonify({'message': 'Access Denied. Methods allowed are GET and POST.'})
 
 
 register_args = {
-    'name': fields.Str(),
-    'email': fields.Str(),
-    'password': fields.Str()
+    'name': fields.Str(required=True),
+    'email': fields.Str(required=True),
+    'password': fields.Str(required=True)
 }
 
 
-@app.route('/v1/auth/register', methods=['GET', 'POST'])
-@use_args(register_args)
-def register(args):
-    result = {}
+@api.route('/api/v1/auth/register')
+class Register(Resource):
+    @api.doc(params={'name': 'User Name', 'email': 'User email', 'password': 'User password'})
+    def post(self):
 
-    if request.method == 'POST':
+        """ Register New Users """
 
-        # Saves new user to database
-
+        result = {}
+        args = parser.parse(register_args, request)
         schema = UserSchema()
         errors = schema.validate(args)
         if errors:
@@ -115,49 +107,55 @@ def register(args):
             db.session.add(user)
             db.session.commit()
             user_token = user.generate_token(user.id)
-            result.update({'message': 'registration_success',
+            result.update({'messages': 'registration_success',
                            'user_id': user.id,
                            'user_token': user_token.decode()})
         except Exception as exc:
             db.session.rollback()
             db.session.flush()
-            result.update({'message': str(exc)})
+            result.update({'messages': str(exc)})
         return jsonify(result)
 
-    else:
-        return jsonify({'message': 'Access Denied. Methods allowed are GET and POST.'})
 
+create_args = {
+    'name': fields.Str(required=True)
+}
 
-create_list_args = {
-    'name': fields.Str(),
+list_args = {
     'q': fields.Str(),
-    'limit': fields.Int(missing=20)
+    'limit': fields.Int(missing=20),
+    'offset': fields.Int(missing=0)
 }
 
 
-@app.route('/v1/bucketlists/', methods=['GET', 'POST'])
-@verify_token
-@use_args(create_list_args)
-def create_list_bucket_list(args):
-    result = {}
-    user_id = get_user_from_token()
+@api.route('/api/v1/bucketlists/')
+class CreateListBuckets(Resource):
+    @api.header('Authorization', 'Format: Bearer token', required=True)
+    @api.doc(params={'name': 'Bucket list name'})
+    @verify_token
+    def post(self):
 
-    schema = BucketSchema()
-    errors = schema.validate(args)
-    if errors:
-        return jsonify(errors)
+        """ Create new bucket list """
 
-    if request.method == 'POST':
-
-        # Create new bucket list
+        result = {}
+        user_id = get_user_from_token()
+        args = parser.parse(create_args, request)
+        schema = BucketSchema()
+        errors = schema.validate(args)
+        if errors:
+            return jsonify(errors)
 
         if user_id:
             try:
+                bucket_lists = Bucketlist.query.filter_by(created_by=user_id, name=args['name']).first()
+                if bucket_lists:
+                    return jsonify({'messages': 'Error: Bucket list {} already exists'.format(args['name'])})
+
                 bucket_list = Bucketlist(args['name'], user_id)
                 db.session.add(bucket_list)
                 db.session.commit()
                 result.update({
-                    'message': 'create_success',
+                    'messages': 'create_success',
                     'bucketlists':
                         {
                             'id': bucket_list.id,
@@ -169,12 +167,24 @@ def create_list_bucket_list(args):
             except Exception as exc:
                 db.session.rollback()
                 db.session.flush()
-                result.update({'message': str(exc)})
+                result.update({'messages': str(exc)})
         return jsonify(result)
 
-    elif request.method == 'GET':
+    @api.header('Authorization', 'Format: Bearer token', required=True)
+    @api.doc(
+        params={'q': 'Bucket list name to query', 'limit': 'Limit Bucket lists to view'})
+    @verify_token
+    def get(self):
 
-        # list all bucket lists for user
+        """ List all bucket lists for user """
+
+        result = {}
+        user_id = get_user_from_token()
+        args = parser.parse(list_args, request)
+        schema = BucketSchema()
+        errors = schema.validate(args)
+        if errors:
+            return jsonify(errors)
 
         if user_id:
             try:
@@ -184,9 +194,10 @@ def create_list_bucket_list(args):
                     limit = 20
 
                 if request.args.get('q'):
-                    bucket_lists = Bucketlist.query.filter_by(created_by=user_id, name=args['q']).all()
+                    bucket_lists = Bucketlist.query.filter_by(created_by=user_id).filter(
+                        Bucketlist.name.ilike('%'+args['q']+'%')).all()
                 else:
-                    bucket_lists = Bucketlist.query.filter_by(created_by=user_id).limit(limit)
+                    bucket_lists = Bucketlist.query.filter_by(created_by=user_id).limit(limit).offset(args['offset'])
                 output = []
                 if bucket_lists:
                     for bucket_list in bucket_lists:
@@ -209,41 +220,35 @@ def create_list_bucket_list(args):
                             'date_modified': bucket_list.date_modified,
                             'created_by': bucket_list.created_by
                         })
-                    result.update({'message': 'list_success',
+                    result.update({'messages': 'list_success',
                                    'bucketlists': output})
                 else:
                     result.update(
-                        {'message': 'Bucket list does not exist'})
+                        {'messages': 'Bucket list does not exist'})
             except Exception as exc:
-                result.update({'message': str(exc)})
+                result.update({'messages': str(exc)})
         return jsonify(result)
 
-    else:
-        return jsonify({'message': 'Access Denied. Methods allowed are GET and POST.'})
 
-get_update_delete_args = {
-    'name': fields.Str()
+update_args = {
+    'name': fields.Str(required=True)
 }
 
 
-@app.route('/v1/bucketlists/<int:bid>/', methods=['GET', 'PUT', 'DELETE'])
-@verify_token
-@use_args(get_update_delete_args)
-def get_update_delete_bucket(args, bid):
-    result = {}
-    user_id = get_user_from_token()
+@api.route('/api/v1/bucketlists/<int:bid>/')
+class GetUpdateDeleteBuckets(Resource):
+    @api.header('Authorization', 'Format: Bearer token', required=True)
+    @api.doc({})
+    @verify_token
+    def get(self, bid):
 
-    if not isinstance(bid, int):
-        return jsonify({'message': 'Bucket list id must be an integer'})
+        """ Get single bucket list using id """
 
-    schema = BucketSchema()
-    errors = schema.validate(args)
-    if errors:
-        return jsonify(errors)
+        result = {}
+        user_id = get_user_from_token()
 
-    if request.method == 'GET':
-
-        # get single bucket list
+        if not isinstance(bid, int):
+            return jsonify({'messages': 'Bucket list id must be an integer'})
 
         try:
             bucket_list = Bucketlist.query.filter_by(created_by=user_id, id=bid).first()
@@ -268,24 +273,43 @@ def get_update_delete_bucket(args, bid):
                     'date_modified': bucket_list.date_modified,
                     'created_by': bucket_list.created_by
                 })
-                result.update({'message': 'get_single_success',
+                result.update({'messages': 'get_single_success',
                                'bucketlist': output})
             else:
-                result.update({'message': 'Bucket list does not exist or User does not own bucket list {}'.format(id)})
+                result.update(
+                    {'messages': 'Bucket list does not exist or User does not own bucket list {}'.format(bid)})
         except Exception as exc:
             db.session.rollback()
             db.session.flush()
-            result.update({'message': str(exc)})
+            result.update({'messages': str(exc)})
         return jsonify(result)
 
-    elif request.method == 'PUT':
+    @api.header('Authorization', 'Format: Bearer token', required=True)
+    @api.doc(params={'name': 'Bucket list name'})
+    @verify_token
+    def put(self, bid):
 
-        # update single bucket list
+        """ Update single bucket list """
+
+        result = {}
+        user_id = get_user_from_token()
+        args = parser.parse(update_args, request)
+
+        if not isinstance(bid, int):
+            return jsonify({'messages': 'Bucket list id must be an integer'})
+
+        schema = BucketSchema()
+        errors = schema.validate(args)
+        if errors:
+            return jsonify(errors)
 
         try:
             bucket_list = Bucketlist.query.filter_by(created_by=user_id, id=bid).first()
             output = {}
             if bucket_list:
+                if Bucketlist.query.filter_by(created_by=user_id, name=args['name']).first():
+                    return jsonify({'messages': 'Error: Bucket list {} already exists'.format(args['name'])})
+
                 items = BucketListItems.query.filter_by(bucketlist_id=bucket_list.id).all()
                 item_list = []
                 if items:
@@ -307,19 +331,29 @@ def get_update_delete_bucket(args, bid):
                     'date_modified': bucket_list.date_modified,
                     'created_by': bucket_list.created_by
                 })
-                result.update({'message': 'update_single_success',
+                result.update({'messages': 'update_single_success',
                                'bucketlist': output})
             else:
-                result.update({'message': 'Bucket list does not exist or User does not own bucket list {}'.format(id)})
+                result.update(
+                    {'messages': 'Bucket list does not exist or User does not own bucket list {}'.format(bid)})
         except Exception as exc:
             db.session.rollback()
             db.session.flush()
-            result.update({'message': str(exc)})
+            result.update({'messages': str(exc)})
         return jsonify(result)
 
-    elif request.method == 'DELETE':
+    @api.header('Authorization', 'Format: Bearer token', required=True)
+    @api.doc(params={})
+    @verify_token
+    def delete(self, bid):
 
-        # delete single bucket list
+        """ Delete single bucket list """
+
+        result = {}
+        user_id = get_user_from_token()
+
+        if not isinstance(bid, int):
+            return jsonify({'messages': 'Bucket list id must be an integer'})
 
         try:
             bucket_list = Bucketlist.query.filter_by(created_by=user_id, id=bid).first()
@@ -327,51 +361,54 @@ def get_update_delete_bucket(args, bid):
                 delete_bucket = Bucketlist.query.filter_by(created_by=user_id, id=bid).delete()
                 db.session.commit()
                 if delete_bucket:
-                    result.update({'message': 'delete_single_success'})
+                    result.update({'messages': 'delete_single_success'})
             else:
-                result.update({'message': 'Bucket list does not exist or User does not own bucket list {}'.format(id)})
+                result.update(
+                    {'messages': 'Bucket list does not exist or User does not own bucket list {}'.format(bid)})
         except Exception as exc:
             db.session.rollback()
             db.session.flush()
-            result.update({'message': str(exc)})
+            result.update({'messages': str(exc)})
         return jsonify(result)
-
-    else:
-        return jsonify({'message': 'Access Denied. Methods allowed are GET, PUT and DELETE.'})
 
 
 new_item_args = {
-    'name': fields.Str()
+    'name': fields.Str(required=True)
 }
 
 
-@app.route('/v1/bucketlists/<int:bid>/items/', methods=['POST'])
-@verify_token
-@use_args(new_item_args)
-def new_item(args, bid):
-    result = {}
-    user_id = get_user_from_token()
+@api.route('/api/v1/bucketlists/<int:bid>/items/', methods=['POST'])
+class CreateItem(Resource):
+    @api.header('Authorization', 'Format: Bearer token', required=True)
+    @api.doc(params={'name': 'Item name'})
+    @verify_token
+    def post(self, bid):
 
-    if not isinstance(bid, int):
-        return jsonify({'message': 'Bucket list id must be an integer'})
+        """ Create new item in bucket list """
 
-    schema = ItemsSchema()
-    errors = schema.validate(args)
-    if errors:
-        return jsonify(errors)
+        result = {}
+        user_id = get_user_from_token()
+        args = parser.parse(new_item_args, request)
 
-    if request.method == 'POST':
+        if not isinstance(bid, int):
+            return jsonify({'messages': 'Bucket list id must be an integer'})
 
-        # create new item in bucket list
+        schema = ItemsSchema()
+        errors = schema.validate(args)
+        if errors:
+            return jsonify(errors)
 
         try:
             bucket_list = Bucketlist.query.filter_by(created_by=user_id, id=bid).first()
             if bucket_list:
+                if BucketListItems.query.filter_by(bucketlist_id=bid, name=args['name']).first():
+                    return jsonify({'messages': 'Error: Bucket list item {} already exists'.format(args['name'])})
+
                 item = BucketListItems(args['name'], bucket_list.id)
                 db.session.add(item)
                 db.session.commit()
                 result.update({
-                    'message': 'create_item_success',
+                    'messages': 'create_item_success',
                     'item': {
                         'id': item.id,
                         'name': item.name,
@@ -382,47 +419,51 @@ def new_item(args, bid):
                     }
                 })
             else:
-                result.update({'message': 'Bucket list does not exist'})
+                result.update(
+                    {'messages': 'Bucket list does not exist or User does not own bucket list {}'.format(bid)})
         except Exception as exc:
             db.session.rollback()
             db.session.flush()
-            result.update({'message': str(exc)})
+            result.update({'messages': str(exc)})
         return jsonify(result)
 
-    else:
-        return jsonify({'message': 'Access Denied. The only Method allowed is POST.'})
 
-
-update_delete_args = {
+update_args = {
     'name': fields.Str(),
     'done': fields.Str()
 }
 
 
-@app.route('/v1/bucketlists/<int:bid>/items/<int:item_id>', methods=['PUT', 'DELETE'])
-@verify_token
-@use_args(update_delete_args)
-def update_delete_item(args, bid, item_id):
-    result = {}
-    user_id = get_user_from_token()
+@api.route('/api/v1/bucketlists/<int:bid>/items/<int:item_id>')
+class UpdateDeleteItems(Resource):
 
-    if not all(isinstance(x, int) for x in [bid, item_id]):
-        return jsonify({'message': 'Bucket list id and Item id must be an integer'})
+    @api.header('Authorization', 'Format: Bearer token', required=True)
+    @api.doc(params={'name': 'Item name', 'done': 'True or False'})
+    @verify_token
+    def put(self, bid, item_id):
 
-    schema = ItemsSchema()
-    errors = schema.validate(args)
-    if errors:
-        return jsonify(errors)
+        """ Update a bucket list item """
 
-    if request.method == 'PUT':
+        result = {}
+        user_id = get_user_from_token()
+        args = parser.parse(update_args, request)
 
-        # update a bucket list item
+        if not all(isinstance(x, int) for x in [bid, item_id]):
+            return jsonify({'messages': 'Bucket list id and Item id must be an integer'})
+
+        schema = ItemsSchema()
+        errors = schema.validate(args)
+        if errors:
+            return jsonify(errors)
 
         try:
             bucket_list = Bucketlist.query.filter_by(id=bid).first()
             if bucket_list and bucket_list.created_by == user_id:
                 item = BucketListItems.query.filter_by(bucketlist_id=bid, id=item_id).first()
                 if item:
+                    if BucketListItems.query.filter_by(bucketlist_id=bid, name=args['name']).first():
+                        return jsonify({'messages': 'Error: Bucket list item {} already exists'.format(args['name'])})
+
                     item.name = args['name']
                     if args['done'] and args['done'].lower() == "true":
                         item.done = True
@@ -430,7 +471,7 @@ def update_delete_item(args, bid, item_id):
                         item.done = False
                     db.session.commit()
                     result.update({
-                        'message': 'update_item_success',
+                        'messages': 'update_item_success',
                         'item': {
                             'id': item.id,
                             'name': item.name,
@@ -441,18 +482,27 @@ def update_delete_item(args, bid, item_id):
                         }
                     })
                 else:
-                    result.update({'message': 'Item does not exist'})
+                    result.update({'messages': 'Item does not exist'})
             else:
-                result.update({'message': 'Bucket list does not exist or User does not own bucket list {}'.format(id)})
+                result.update({'messages': 'Bucket list does not exist or User does not own bucket list {}'.format(id)})
         except Exception as exc:
             db.session.rollback()
             db.session.flush()
-            result.update({'message': str(exc)})
+            result.update({'messages': str(exc)})
         return jsonify(result)
 
-    elif request.method == 'DELETE':
+    @api.header('Authorization', 'Format: Bearer token', required=True)
+    @api.doc(params={})
+    @verify_token
+    def delete(self, bid, item_id):
 
-        # delete item in bucket list
+        """ Delete item in bucket list """
+
+        result = {}
+        user_id = get_user_from_token()
+
+        if not all(isinstance(x, int) for x in [bid, item_id]):
+            return jsonify({'messages': 'Bucket list id and Item id must be an integer'})
 
         try:
             bucket_list = Bucketlist.query.filter_by(id=bid).first()
@@ -460,14 +510,11 @@ def update_delete_item(args, bid, item_id):
                 delete_item = BucketListItems.query.filter_by(bucketlist_id=bid, id=item_id).delete()
                 db.session.commit()
                 if delete_item:
-                    result.update({'message': 'delete_item_success'})
+                    result.update({'messages': 'delete_item_success'})
             else:
-                result.update({'message': 'Bucket list does not exist or User does not own bucket list {}'.format(id)})
+                result.update({'messages': 'Bucket list does not exist or User does not own bucket list {}'.format(id)})
         except Exception as exc:
             db.session.rollback()
             db.session.flush()
-            result.update({'message': str(exc)})
+            result.update({'messages': str(exc)})
         return jsonify(result)
-
-    else:
-        return jsonify({'message': 'Access Denied. Methods allowed are PUT and DELETE.'})
