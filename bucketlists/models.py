@@ -1,7 +1,6 @@
 import jwt
 from datetime import datetime, timedelta
-from config import db, SECRET_KEY, schema
-from marshmallow import fields, ValidationError, validates
+from config import db, SECRET_KEY
 
 
 # Create the user table
@@ -73,55 +72,3 @@ class BucketListItems(db.Model):
         self.name = name
         self.done = done
         self.bucketlist_id = bucketlist_id
-
-
-# Schema for the User class
-class UserSchema(schema.ModelSchema):
-    class Meta:
-        model = User
-
-    email = fields.Email(required=True)
-    name = fields.String(required=False)
-
-    @validates('name')
-    def validate_name(self, name):
-        if name.replace(" ", "") == "":
-            raise ValidationError("Name cannot be empty")
-        elif name.replace(" ", "").strip().isalpha() is False:
-            raise ValidationError("Use alphabet letters (a-z) only for the name")
-
-    @validates('password')
-    def validate_name(self, password):
-        if password.strip() == "":
-            raise ValidationError("Password cannot be empty")
-
-
-# Schema for the Bucketlist class
-class BucketSchema(schema.ModelSchema):
-    class Meta:
-        model = Bucketlist
-
-    name = fields.String(required=False)
-
-    @validates('name')
-    def validate_name(self, name):
-        if name.replace(" ", "") == "" or len(name) < 1:
-            raise ValidationError("Bucket list name cannot be empty")
-        elif name.replace(" ", "").strip().isalnum() is False:
-            raise ValidationError("Use alphabet letters (a-z) only for the bucket list name")
-
-
-# Schema for the Bucketlistitems class
-class ItemsSchema(schema.ModelSchema):
-    class Meta:
-        model = BucketListItems
-
-    name = fields.String(required=False)
-    done = fields.Boolean(required=False)
-
-    @validates('name')
-    def validate_name(self, name):
-        if name.replace(" ", "") == "" or len(name) < 1:
-            raise ValidationError("Item name cannot be empty")
-        elif name.replace(" ", "").strip().isalnum() is False:
-            raise ValidationError("Use alphabet letters (a-z) only for the item name")
