@@ -147,7 +147,8 @@ create_args = {
 list_args = {
     'q': fields.Str(),
     'limit': fields.Int(missing=20),
-    'offset': fields.Int(missing=0)
+    'offset': fields.Int(missing=0),
+    'page': fields.Int(missing=1)
 }
 
 
@@ -216,16 +217,22 @@ class CreateListBuckets(Resource):
                 else:
                     limit = 20
 
+                if args['page'] and int(args['page']) <= 100 \
+                        and isinstance(int(args['page']), int):
+                    page = int(args['page'])
+                else:
+                    page = 1
+
                 if request.args.get('q'):
                     bucket_lists = Bucketlist.query.filter_by(
                         created_by=user_id).filter(
                         Bucketlist.name.ilike('%' + args['q'] + '%')).all()
                 else:
                     bucket_lists = Bucketlist.query.filter_by(
-                        created_by=user_id).limit(limit).offset(args['offset'])
+                        created_by=user_id).paginate(page, limit, False)
                 output = []
                 if bucket_lists:
-                    for bucket_list in bucket_lists:
+                    for bucket_list in bucket_lists.items:
                         items = BucketListItems.query.filter_by(
                             bucketlist_id=bucket_list.id).all()
                         item_list = []
@@ -250,7 +257,7 @@ class CreateListBuckets(Resource):
                                    'bucketlists': output})
                 else:
                     result.update(
-                        {'messages': 'Bucket list does not exist'})
+                        {'messages': 'No Bucket lists found'})
             except Exception as exc:
                 result.update({'messages': str(exc)})
         return jsonify(result)
