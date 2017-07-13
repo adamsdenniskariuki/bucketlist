@@ -10,7 +10,8 @@ class User(db.Model):
     email = db.Column(db.String(250), unique=True, nullable=False)
     password = db.Column(db.String(250), nullable=False)
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
-    bucketlists = db.relationship('Bucketlist', backref="user", lazy='dynamic')
+    bucketlists = db.relationship('Bucketlist', cascade='all,delete',
+                                  backref="user", lazy='dynamic')
 
     # Initialize variables
     def __init__(self, name, email, password):
@@ -48,9 +49,13 @@ class Bucketlist(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(250), nullable=False)
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
-    date_modified = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    created_by = db.Column(db.Integer, db.ForeignKey("user.id"))
-    bucketlistitems = db.relationship('BucketListItems', backref="bucketlist", lazy='dynamic')
+    date_modified = db.Column(db.DateTime, default=datetime.utcnow,
+                              onupdate=datetime.utcnow)
+    created_by = db.Column(db.Integer, db.ForeignKey("user.id",
+                                                     ondelete='CASCADE'),
+                           nullable=True)
+    bucketlistitems = db.relationship('BucketListItems', backref="bucketlist",
+                                      cascade='all,delete', lazy='dynamic')
 
     # Initialize variables
     def __init__(self, name, created_by):
@@ -63,9 +68,12 @@ class BucketListItems(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(250), nullable=False)
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
-    date_modified = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    date_modified = db.Column(db.DateTime, default=datetime.utcnow,
+                              onupdate=datetime.utcnow)
     done = db.Column(db.Boolean, default=False)
-    bucketlist_id = db.Column(db.Integer, db.ForeignKey("bucketlist.id"))
+    bucketlist_id = db.Column(db.Integer, db.ForeignKey("bucketlist.id",
+                                                        ondelete='CASCADE'),
+                              nullable=True)
 
     # Initialize variables
     def __init__(self, name, bucketlist_id, done=False):

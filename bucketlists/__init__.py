@@ -14,7 +14,7 @@ db.create_all()
 # Return validation errors as JSON
 @parser.error_handler
 def handle_error(error):
-    abort(jsonify({'messages': error.messages}))
+    abort(jsonify({'messages': error.messages, 'user_token': ''}))
 
 
 def get_user_from_token():
@@ -46,7 +46,7 @@ def verify_token(func):
 def register_validation(args):
     """ Validates the user name """
 
-    if args['name'].isalpha():
+    if args['name'].replace(" ", "").isalpha():
         return args
     else:
         raise ValidationError({"name": ["Use a-z only for the name field"]})
@@ -69,6 +69,20 @@ def name_validation(args):
 def index():
     return jsonify({'messages': 'Access Denied.'})
 
+
+@api.route('/api/v1/auth/loggedin', methods=['OPTIONS', 'POST'])
+class IsUserLoggedIn(Resource):
+    @cross_origin(allow_headers=['Content-Type', 'Authorization'])
+    @api.header('Authorization', 'Format: Bearer token', required=True)
+    def post(self):
+        if not get_user_from_token():
+            return jsonify('user not found')
+        return jsonify(get_user_from_token())
+
+    @cross_origin(allow_headers=['Content-Type', 'Authorization'])
+    @api.header('Authorization', 'Format: Bearer token', required=True)
+    def options(self):
+        pass
 
 login_args = {
     'email': fields.Email(required=True),
@@ -106,7 +120,7 @@ class Login(Resource):
 
 register_args = {
     'name': fields.Str(required=True),
-    'email': fields.Str(required=True),
+    'email': fields.Email(required=True),
     'password': fields.Str(required=True)
 }
 
@@ -229,10 +243,10 @@ class CreateListBuckets(Resource):
                         Bucketlist.name.ilike('%' + args['q'] + '%')).all()
                 else:
                     bucket_lists = Bucketlist.query.filter_by(
-                        created_by=user_id).paginate(page, limit, False)
+                        created_by=user_id).all()
                 output = []
                 if bucket_lists:
-                    for bucket_list in bucket_lists.items:
+                    for bucket_list in bucket_lists:
                         items = BucketListItems.query.filter_by(
                             bucketlist_id=bucket_list.id).all()
                         item_list = []

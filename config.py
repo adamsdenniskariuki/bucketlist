@@ -32,8 +32,7 @@ app.config['TESTING'] = False
 app.config['CSRF_ENABLED'] = True
 
 # implement cross origin headers
-cors = CORS(app)
-app.config['CORS_HEADERS'] = 'Content-Type'
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # allow backslash at end of url
 app.url_map.strict_slashes = False
