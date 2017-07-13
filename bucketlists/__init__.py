@@ -93,7 +93,7 @@ login_args = {
 @api.route('/api/v1/auth/login')
 class Login(Resource):
     @api.doc(params={'password': 'User password', 'email': 'User email'})
-    @cross_origin()
+    @cross_origin(allow_headers=['Content-Type', 'Authorization'])
     def post(self):
 
         """ Login Registered Users """
@@ -129,7 +129,7 @@ register_args = {
 class Register(Resource):
     @api.doc(params={'name': 'User Name', 'email': 'User email',
                      'password': 'User password'})
-    @cross_origin()
+    @cross_origin(allow_headers=['Content-Type', 'Authorization'])
     def post(self):
 
         """ Register New Users """
@@ -159,7 +159,7 @@ create_args = {
 }
 
 list_args = {
-    'q': fields.Str(),
+    'q': fields.Str(missing=''),
     'limit': fields.Int(missing=20),
     'offset': fields.Int(missing=0),
     'page': fields.Int(missing=1)
@@ -171,7 +171,7 @@ class CreateListBuckets(Resource):
     @api.header('Authorization', 'Format: Bearer token', required=True)
     @api.doc(params={'name': 'Bucket list name'})
     @verify_token
-    @cross_origin()
+    @cross_origin(allow_headers=['Content-Type', 'Authorization'])
     def post(self):
 
         """ Create new bucket list """
@@ -214,7 +214,7 @@ class CreateListBuckets(Resource):
         params={'q': 'Bucket list name to query',
                 'limit': 'Limit Bucket lists to view'})
     @verify_token
-    @cross_origin()
+    @cross_origin(allow_headers=['Content-Type', 'Authorization'])
     def get(self):
 
         """ List all bucket lists for user """
@@ -237,18 +237,28 @@ class CreateListBuckets(Resource):
                 else:
                     page = 1
 
-                if request.args.get('q'):
+                if args['q'] and args['q'].isdigit():
                     bucket_lists = Bucketlist.query.filter_by(
                         created_by=user_id).filter(
-                        Bucketlist.name.ilike('%' + args['q'] + '%')).all()
+                        Bucketlist.id.ilike('%' + int(args['q']) + '%')).\
+                        paginate(page, limit, False)
+
+                elif args['q'] and args['q'].replace(" ", ""):
+
+                    bucket_lists = Bucketlist.query.filter_by(
+                        created_by=user_id).filter(
+                        Bucketlist.name.ilike('%' + args['q'] + '%')).paginate(
+                            page, limit, False)
+
                 else:
                     bucket_lists = Bucketlist.query.filter_by(
-                        created_by=user_id).all()
+                        created_by=user_id).paginate(
+                            page, limit, False)
                 output = []
                 if bucket_lists:
-                    for bucket_list in bucket_lists:
+                    for bucket_list in bucket_lists.items:
                         items = BucketListItems.query.filter_by(
-                            bucketlist_id=bucket_list.id).all()
+                            bucketlist_id=bucket_list.id)
                         item_list = []
                         if items:
                             for item in items:
@@ -287,7 +297,7 @@ class GetUpdateDeleteBuckets(Resource):
     @api.header('Authorization', 'Format: Bearer token', required=True)
     @api.doc({})
     @verify_token
-    @cross_origin()
+    @cross_origin(allow_headers=['Content-Type', 'Authorization'])
     def get(self, bid):
 
         """ Get single bucket list using id """
@@ -338,7 +348,7 @@ class GetUpdateDeleteBuckets(Resource):
     @api.header('Authorization', 'Format: Bearer token', required=True)
     @api.doc(params={'name': 'Bucket list name'})
     @verify_token
-    @cross_origin()
+    @cross_origin(allow_headers=['Content-Type', 'Authorization'])
     def put(self, bid):
 
         """ Update single bucket list """
@@ -398,7 +408,7 @@ class GetUpdateDeleteBuckets(Resource):
     @api.header('Authorization', 'Format: Bearer token', required=True)
     @api.doc(params={})
     @verify_token
-    @cross_origin()
+    @cross_origin(allow_headers=['Content-Type', 'Authorization'])
     def delete(self, bid):
 
         """ Delete single bucket list """
@@ -439,7 +449,7 @@ class CreateItem(Resource):
     @api.header('Authorization', 'Format: Bearer token', required=True)
     @api.doc(params={'name': 'Item name'})
     @verify_token
-    @cross_origin()
+    @cross_origin(allow_headers=['Content-Type', 'Authorization'])
     def post(self, bid):
 
         """ Create new item in bucket list """
@@ -497,7 +507,7 @@ class UpdateDeleteItems(Resource):
     @api.header('Authorization', 'Format: Bearer token', required=True)
     @api.doc(params={'name': 'Item name', 'done': 'True or False'})
     @verify_token
-    @cross_origin()
+    @cross_origin(allow_headers=['Content-Type', 'Authorization'])
     def put(self, bid, item_id):
 
         """ Update a bucket list item """
@@ -556,7 +566,7 @@ class UpdateDeleteItems(Resource):
     @api.header('Authorization', 'Format: Bearer token', required=True)
     @api.doc(params={})
     @verify_token
-    @cross_origin()
+    @cross_origin(allow_headers=['Content-Type', 'Authorization'])
     def delete(self, bid, item_id):
 
         """ Delete item in bucket list """
