@@ -14,7 +14,7 @@ db.create_all()
 # Return validation errors as JSON
 @parser.error_handler
 def handle_error(error):
-    abort(jsonify({'messages': error.messages, 'user_token': ''}))
+    abort(jsonify({'messages': str(error.messages), 'user_token': ''}))
 
 
 def get_user_from_token():
@@ -70,6 +70,94 @@ def index():
     return jsonify({'messages': 'Access Denied.'})
 
 
+edit_user_args = {
+    'id': fields.Int(),
+    'name': fields.Str(),
+    'email': fields.Email(),
+    'password': fields.Str(missing=''),
+    'oldpassword': fields.Str(missing='')
+}
+
+
+@api.route('/api/v1/auth/edituser')
+class EditUser(Resource):
+    @api.header('Authorization', 'Format: Bearer token', required=True)
+    @api.doc(params={'id': 'user id',
+                     'name': 'user name',
+                     'email': 'user email',
+                     'password': 'user password',
+                     'oldpassword': 'user old password'})
+    @verify_token
+    @cross_origin(allow_headers=['Content-Type', 'Authorization'])
+    def post(self):
+
+        result = []
+        args = parser.parse(edit_user_args, request)
+
+        try:
+
+            user = User.query.filter_by(id=args['id']).first()
+            if user:
+
+                if args['oldpassword'] and args['oldpassword'].strip():
+                    if not check_password_hash(
+                            user.password, args['oldpassword']):
+                        return jsonify(
+                            {"messages": "The old password is incorrect"})
+
+                if args['password'] and len(args['password'].strip()) <= 6:
+                    return jsonify(
+                        {"messages":
+                            "Passwords must have 6 or more characters"})
+
+                if args['name'] and args['name'] != user.name:
+                    user.name = args['name']
+                    result.append("User name successfully updated")
+
+                if args['email'] and args['email'] != user.email:
+                    user.email = args['email']
+                    result.append("User email successfully updated")
+
+                if args['password'] and not check_password_hash(
+                        user.password, args['password']):
+                    user.password = generate_password_hash(args['password'])
+                    result.append("User password successfully updated")
+
+                if len(result) > 0:
+                    db.session.commit()
+                else:
+                    result.append("No changes were made")
+
+            else:
+                result.append("User does not exist")
+
+        except Exception as exc:
+            db.session.rollback()
+            db.session.flush()
+            result.append(str(exc))
+
+        return jsonify({"messages": result})
+
+
+@api.route('/api/v1/auth/getuser')
+class GetUser(Resource):
+    @api.header('Authorization', 'Format: Bearer token', required=True)
+    @api.doc(params={})
+    @verify_token
+    @cross_origin(allow_headers=['Content-Type', 'Authorization'])
+    def post(self):
+        if get_user_from_token() and isinstance(get_user_from_token(), int):
+            user = User.query.filter_by(id=get_user_from_token()).first()
+            if user:
+                return jsonify({'id': user.id,
+                                'name': user.name,
+                                "email": user.email,
+                                "password": user.password,
+                                "messages": "user exists"
+                                })
+        return jsonify({'messages': 'user not found'})
+
+
 @api.route('/api/v1/auth/loggedin', methods=['OPTIONS', 'POST'])
 class IsUserLoggedIn(Resource):
     @cross_origin(allow_headers=['Content-Type', 'Authorization'])
@@ -83,6 +171,7 @@ class IsUserLoggedIn(Resource):
     @api.header('Authorization', 'Format: Bearer token', required=True)
     def options(self):
         pass
+
 
 login_args = {
     'email': fields.Email(required=True),
@@ -160,8 +249,7 @@ create_args = {
 
 list_args = {
     'q': fields.Str(missing=''),
-    'limit': fields.Int(missing=20),
-    'offset': fields.Int(missing=0),
+    'limit': fields.Int(missing=10),
     'page': fields.Int(missing=1)
 }
 
@@ -229,7 +317,7 @@ class CreateListBuckets(Resource):
                         and isinstance(int(args['limit']), int):
                     limit = int(args['limit'])
                 else:
-                    limit = 20
+                    limit = 10
 
                 if args['page'] and int(args['page']) <= 100 \
                         and isinstance(int(args['page']), int):
@@ -237,23 +325,23 @@ class CreateListBuckets(Resource):
                 else:
                     page = 1
 
+                print(args['q'].isdigit())
                 if args['q'] and args['q'].isdigit():
+
                     bucket_lists = Bucketlist.query.filter_by(
-                        created_by=user_id).filter(
-                        Bucketlist.id.ilike('%' + int(args['q']) + '%')).\
+                        created_by=user_id).filter_by(id=int(q)). \
                         paginate(page, limit, False)
 
                 elif args['q'] and args['q'].replace(" ", ""):
-
                     bucket_lists = Bucketlist.query.filter_by(
                         created_by=user_id).filter(
                         Bucketlist.name.ilike('%' + args['q'] + '%')).paginate(
-                            page, limit, False)
+                        page, limit, False)
 
                 else:
                     bucket_lists = Bucketlist.query.filter_by(
                         created_by=user_id).paginate(
-                            page, limit, False)
+                        page, limit, False)
                 output = []
                 if bucket_lists:
                     for bucket_list in bucket_lists.items:
@@ -278,7 +366,13 @@ class CreateListBuckets(Resource):
                             'created_by': bucket_list.created_by
                         })
                     result.update({'messages': 'list_success',
-                                   'bucketlists': output})
+                                   'bucketlists': output,
+                                   'pagination': {
+                                       'has_next': bucket_lists.has_next,
+                                       'has_prev': bucket_lists.has_prev,
+                                       'next_num': bucket_lists.next_num,
+                                       'prev_num': bucket_lists.prev_num}
+                                   })
                 else:
                     result.update(
                         {'messages': 'No Bucket lists found'})
@@ -495,10 +589,9 @@ class CreateItem(Resource):
             result.update({'messages': str(exc)})
         return jsonify(result)
 
-
 update_args = {
     'name': fields.Str(missing=''),
-    'done': fields.Str(missing='')
+    'done': fields.Bool(missing=None)
 }
 
 
@@ -514,7 +607,7 @@ class UpdateDeleteItems(Resource):
 
         result = {}
         user_id = get_user_from_token()
-        args = parser.parse(update_args, request, validate=name_validation)
+        args = parser.parse(update_args, request)
 
         if not all(isinstance(x, int) for x in [bid, item_id]):
             return jsonify(
@@ -526,19 +619,22 @@ class UpdateDeleteItems(Resource):
                 item = BucketListItems.query.filter_by(
                     bucketlist_id=bid, id=item_id).first()
                 if item:
-                    if BucketListItems.query.filter_by(
-                            bucketlist_id=bid, name=args['name']).first():
-                        return jsonify(
-                            {'messages': 'Error: Bucket list item {} '
-                                         'already exists'
-                                .format(args['name'])})
 
-                    item.name = args['name']
-                    if args['done'] and args['done'].lower() == "true":
+                    if args['name'] and len(args['name'].replace(" ", "")) > 0:
+                        if BucketListItems.query.filter_by(
+                                bucketlist_id=bid, name=args['name']).first():
+                            return jsonify(
+                                {'messages': 'Error: Bucket list item {} '
+                                             'already exists'
+                                    .format(args['name'])})
+
+                        item.name = args['name']
+
+                    if args['done']:
                         item.done = True
                     else:
-                        if args['done'].lower() == "false":
-                            item.done = False
+                        item.done = False
+
                     db.session.commit()
                     result.update({
                         'messages': 'update_item_success',
