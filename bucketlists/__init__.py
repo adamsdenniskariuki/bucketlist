@@ -81,15 +81,11 @@ edit_user_args = {
 
 @api.route('/api/v1/auth/edituser')
 class EditUser(Resource):
-    @api.header('Authorization', 'Format: Bearer token', required=True)
-    @api.doc(params={'id': 'user id',
-                     'name': 'user name',
-                     'email': 'user email',
-                     'password': 'user password',
-                     'oldpassword': 'user old password'})
+
     @verify_token
     @cross_origin(allow_headers=['Content-Type', 'Authorization'])
     def post(self):
+        """ Edit user details """
 
         result = []
         args = parser.parse(edit_user_args, request)
@@ -141,11 +137,10 @@ class EditUser(Resource):
 
 @api.route('/api/v1/auth/getuser')
 class GetUser(Resource):
-    @api.header('Authorization', 'Format: Bearer token', required=True)
-    @api.doc(params={})
     @verify_token
     @cross_origin(allow_headers=['Content-Type', 'Authorization'])
     def post(self):
+        """ Get user details """
         if get_user_from_token() and isinstance(get_user_from_token(), int):
             user = User.query.filter_by(id=get_user_from_token()).first()
             if user:
@@ -161,8 +156,8 @@ class GetUser(Resource):
 @api.route('/api/v1/auth/loggedin', methods=['OPTIONS', 'POST'])
 class IsUserLoggedIn(Resource):
     @cross_origin(allow_headers=['Content-Type', 'Authorization'])
-    @api.header('Authorization', 'Format: Bearer token', required=True)
     def post(self):
+        """ Check if user is logged in """
         if not get_user_from_token():
             return jsonify('user not found')
         return jsonify(get_user_from_token())
@@ -170,6 +165,7 @@ class IsUserLoggedIn(Resource):
     @cross_origin(allow_headers=['Content-Type', 'Authorization'])
     @api.header('Authorization', 'Format: Bearer token', required=True)
     def options(self):
+        """ Check if user is logged in """
         pass
 
 
