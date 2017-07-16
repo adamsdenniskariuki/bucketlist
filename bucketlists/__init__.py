@@ -325,17 +325,11 @@ class CreateListBuckets(Resource):
                 else:
                     page = 1
 
-                print(args['q'].isdigit())
-                if args['q'] and args['q'].isdigit():
-
-                    bucket_lists = Bucketlist.query.filter_by(
-                        created_by=user_id).filter_by(id=int(q)). \
-                        paginate(page, limit, False)
-
-                elif args['q'] and args['q'].replace(" ", ""):
+                if args['q'] and args['q'].replace(" ", ""):
                     bucket_lists = Bucketlist.query.filter_by(
                         created_by=user_id).filter(
-                        Bucketlist.name.ilike('%' + args['q'] + '%')).paginate(
+                        Bucketlist.name.ilike(
+                            '%' + args['q'].replace('"', '') + '%')).paginate(
                         page, limit, False)
 
                 else:
