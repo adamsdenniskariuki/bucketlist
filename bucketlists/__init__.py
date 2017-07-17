@@ -47,10 +47,11 @@ def verify_token(func):
 def register_validation(args):
     """ Validates the user name """
 
-    if args['name'].replace(" ", "").isalpha():
+    if args['name'].replace(" ", "").isalnum():
         return args
     else:
-        raise ValidationError({"name": ["Use a-z only for the name field"]})
+        raise ValidationError(
+            {"name": ["Use a-z and 0-9 only for the name field"]})
 
 
 def name_validation(args):
