@@ -472,6 +472,9 @@ class GetUpdateDeleteBuckets(Resource):
             return jsonify({'messages': 'Bucket list id must be an integer'})
 
         try:
+            if len(args['name'].replace(" ", "")) == 0:
+                return jsonify({"messages": "The name cannot be empty"})
+
             bucket_list = Bucketlist.query.filter_by(
                 created_by=user_id, id=bid).first()
             output = {}
