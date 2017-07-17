@@ -1,3 +1,4 @@
+import requests
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import request, jsonify, abort
@@ -68,6 +69,31 @@ def name_validation(args):
 @app.route('/api/v1/auth/')
 def index():
     return jsonify({'messages': 'Access Denied.'})
+
+verifyrecaptcha_args = {
+    'response': fields.Str(),
+    'secret': fields.Str()
+}
+
+
+@api.route('/api/v1/auth/verifyrecaptcha')
+class VerifyRecaptcha(Resource):
+
+    @cross_origin(allow_headers=['Content-Type', 'Authorization'])
+    def post(self):
+        """ Verify recaptcha response """
+
+        args = parser.parse(verifyrecaptcha_args, request)
+        data = {"response": args['response'], "secret": args['secret']}
+        headers = {'Content-Type': 'application/json'}
+
+        response = requests.post(
+            "https://www.google.com/recaptcha/api/siteverify",
+            params=data,
+            headers=headers
+        )
+
+        return response.text
 
 
 edit_user_args = {
