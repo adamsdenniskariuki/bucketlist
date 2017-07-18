@@ -352,12 +352,14 @@ class CreateListBuckets(Resource):
                     bucket_lists = Bucketlist.query.filter_by(
                         created_by=user_id).filter(
                         Bucketlist.name.ilike(
-                            '%' + args['q'].replace('"', '') + '%')).paginate(
+                            '%' + args['q'].replace('"', '') + '%')).order_by(
+                        Bucketlist.date_modified.desc()).paginate(
                         page, limit, False)
 
                 else:
                     bucket_lists = Bucketlist.query.filter_by(
-                        created_by=user_id).paginate(
+                        created_by=user_id).order_by(
+                        Bucketlist.date_modified.desc()).paginate(
                         page, limit, False)
                 output = []
                 if bucket_lists:
