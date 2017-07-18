@@ -1,7 +1,5 @@
 [![Build Status](https://travis-ci.org/adamsdenniskariuki/bucketlist.svg?branch=dev)](https://travis-ci.org/adamsdenniskariuki/bucketlist) [![Coverage Status](https://coveralls.io/repos/github/adamsdenniskariuki/bucketlist/badge.svg?branch=dev)](https://coveralls.io/github/adamsdenniskariuki/bucketlist?branch=dev) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/3ba1338edb524688b03be35420301c6d)](https://www.codacy.com/app/adamsdenniskariuki/bucketlist?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=adamsdenniskariuki/bucketlist&amp;utm_campaign=Badge_Grade) [![Code Health](https://landscape.io/github/adamsdenniskariuki/bucketlist/dev/landscape.svg?style=flat)](https://landscape.io/github/adamsdenniskariuki/bucketlist/dev)
 
-### [Login](https://angularbucketlist.herokuapp.com/login) [Register](https://angularbucketlist.herokuapp.com/login)
-
 # Bucket list API: 
 
     This is an API that allows a user to create a bucket list and add items to it.
