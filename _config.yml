@@ -1,5 +1,8 @@
 theme: jekyll-theme-cayman
 title: Flask Bucket List API
 description: Create, update, add items and delete your bucket lists.
-url: "http://adamskariukidennis.github.io"
-baseurl: "/bucketlists"
+
+blog:             https://blog.getbootstrap.com
+expo:             https://expo.getbootstrap.com
+themes:           https://themes.getbootstrap.com
+jobs:             https://jobs.getbootstrap.com
