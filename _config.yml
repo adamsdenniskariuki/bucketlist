@@ -1,1 +1,3 @@
 theme: jekyll-theme-cayman
+title: Flask Bucket List API
+description: Create, update, add items and delete your bucket lists. [Login](https://angularbucketlist.herokuapp.com)
