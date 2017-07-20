@@ -310,6 +310,7 @@ class CreateListBuckets(Resource):
                         {
                             'id': bucket_list.id,
                             'name': bucket_list.name,
+                            'items': [],
                             'date_created': bucket_list.date_created,
                             'date_modified': bucket_list.date_modified,
                             'created_by': bucket_list.created_by
