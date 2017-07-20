@@ -598,8 +598,7 @@ class CreateItem(Resource):
                         'name': item.name,
                         'date_created': item.date_created,
                         'date_modified': item.date_modified,
-                        'done': item.done,
-                        'bucket_id': item.bucketlist_id
+                        'done': item.done
                     }
                 })
             else:
