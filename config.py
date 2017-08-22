@@ -17,7 +17,7 @@ app = Flask(__name__, template_folder=os.path.join(basedir, TEMPLATES_FOLDER))
 
 # set database link
 app.config['SQLALCHEMY_DATABASE_URI'] = \
-    'postgres://bekourcldtgbfw:fb07c5bab78dd8a6408e56e9759f5eaf96e9755805f7b1cce13a75a3535784b9@ec2-54-221-254-72.compute-1.amazonaws.com:5432/d6l207ouud1s5h'
+    'postgres://localhost:5432/bucketlists'
 
 # set sql alchemy notifications
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
